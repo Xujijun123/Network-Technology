@@ -73,6 +73,7 @@ int main()
             {
                 if (addr->addr->sa_family == AF_INET)
                 {
+
                     cout << "  IP地址：\t\t" << inet_ntoa(((struct sockaddr_in*)(addr->addr))->sin_addr) << endl;
                     cout << "  网络掩码：\t\t" << inet_ntoa(((struct sockaddr_in*)(addr->netmask))->sin_addr) << endl;
                     cout << "  广播地址：\t\t" << inet_ntoa(((struct sockaddr_in*)(addr->broadaddr))->sin_addr) << endl;
@@ -95,7 +96,7 @@ int main()
     while (1)
     {
         //打开想要监控的网卡
-        cout << "请输入想要监控的网卡的ID" << endl;
+        cout << "请输入想要监控的网卡的ID（0表示结束）" << endl;
         int num;
         cin >> num;
         if (num == 0)
@@ -126,7 +127,7 @@ int main()
             exit(0);
         }
         cout << "正在监听" << ptr->description << endl;
-        //不再需要设备列表，释放
+
         
         //报文内容
         ARPFrame_t ARPFrame;
@@ -145,66 +146,62 @@ int main()
         ARPFrame.PALen = 4;                             //协议地址长为4
         ARPFrame.Operation = htons(0x0001);             //操作为ARP请求
 
-        uint32_t SerIP = ARPFrame.SendIP = htonl(0x00000000);//设置为任意IP地址
-  
-        //本机网卡上绑定的IP地址
-        ARPFrame.SendIP = htonl(0x00000000);
+        uint32_t LocalIP= htonl(0x00000000);//设置为任意IP地址
+        ARPFrame.SendIP = htonl(0x00000000); //本机网卡上绑定的IP地址
         
-        uint32_t RecvIP;
-        ARPFrame_t* IPPacket;
+        uint32_t RecvIP; //接收方的IP
+        ARPFrame_t* RecvPacket;
         for (pcap_addr_t*addr = ptr->addresses; addr != NULL; addr = addr->next)
         {
             if (addr->addr->sa_family == AF_INET)
             {
-                RecvIP = ARPFrame.RecvIP = inet_addr(inet_ntoa(((struct sockaddr_in*)(addr->addr))->sin_addr));
+                RecvIP = ARPFrame.RecvIP = inet_addr(inet_ntoa(((struct sockaddr_in*)(addr->addr))->sin_addr)); //把接收方的IP设置为打开的网卡的IP
             }
         }
 
 
         // 向以太网广播ARP请求
-        struct pcap_pkthdr* adhandleheader;
-        const u_char* adhandledata;
-        int tjdg = 0;
+        struct pcap_pkthdr* RecvHeader;
+        const u_char* RecvData;
 
         if (pcap_sendpacket(pcap_handle, (u_char*)&ARPFrame, sizeof(ARPFrame_t)) != 0)
         {
             pcap_freealldevs(allAdapters);
             throw - 7;
-        }
+        } //发送失败的处理
         else
         {
             while (true) {
-                pcap_next_ex(pcap_handle, &adhandleheader, &adhandledata);
-                IPPacket = (ARPFrame_t*)adhandledata;
+                pcap_next_ex(pcap_handle, &RecvHeader, &RecvData);
+                RecvPacket = (ARPFrame_t*)RecvData;
 
-                if (SerIP == IPPacket->SendIP && RecvIP == IPPacket->RecvIP) {
+                if (LocalIP == RecvPacket->SendIP && RecvIP == RecvPacket->RecvIP) {
                     // 如果是期望的ARP响应包
                     continue;  // 继续循环等待下一个包
                 }
 
                 // 根据网卡号寻找IP地址，并输出IP地址与MAC地址映射关系
-                if (SerIP == IPPacket->RecvIP && RecvIP == IPPacket->SendIP) {
+                if (LocalIP == RecvPacket->RecvIP && RecvIP == RecvPacket->SendIP) {
                     cout << "IP地址与MAC地址的对应关系如下：" << endl << "IP：";
-                    print_IP(IPPacket->SendIP);
+                    print_IP(RecvPacket->SendIP);
                     cout << "MAC：";
-                    print_MAC(IPPacket->SendHA);
+                    print_MAC(RecvPacket->SendHA);
                     cout << endl;
                     break;  // 结束循环，已经找到并输出了对应关系
                 }
             }
         }
 
-
-        // 输入IP地址然后找到并输出对应MAC地址
+        // 输入远程同网段下的IP地址然后找到并输出对应MAC地址
         cout << endl;
-        char pip[16];
-        cout << "=====================请输入目的IP地址===================" << endl;
-        cin >> pip;
-        RecvIP = ARPFrame.RecvIP = inet_addr(pip);
+        char IP[16];
+        cout << "=====================请输入远程目的IP地址===================" << endl;
+        cin >> IP;
+        RecvIP = ARPFrame.RecvIP = inet_addr(IP);
 
-        SerIP = ARPFrame.SendIP = IPPacket->SendIP;
+        LocalIP = ARPFrame.SendIP = RecvPacket->SendIP;
         for (i = 0; i < 6; i++) {
-            ARPFrame.SendHA[i] = ARPFrame.FrameHeader.SrcMAC[i] = IPPacket->SendHA[i];
+            ARPFrame.SendHA[i] = ARPFrame.FrameHeader.SrcMAC[i] = RecvPacket->SendHA[i];
         }
 
         if (pcap_sendpacket(pcap_handle, (u_char*)&ARPFrame, sizeof(ARPFrame_t)) != 0) {
@@ -214,19 +211,19 @@ int main()
         }
         else {
             while (true) {
-                pcap_next_ex(pcap_handle, &adhandleheader, &adhandledata);
-                IPPacket = (ARPFrame_t*)adhandledata;
+                pcap_next_ex(pcap_handle, &RecvHeader, &RecvData);
+                RecvPacket = (ARPFrame_t*)RecvData;
 
-                if (SerIP == IPPacket->SendIP && RecvIP == IPPacket->RecvIP) {
+                if (LocalIP == RecvPacket->SendIP && RecvIP == RecvPacket->RecvIP) {
                     // 如果是期望的ARP响应包
                     continue;  // 继续循环等待下一个包
                 }
 
-                if (SerIP == IPPacket->RecvIP && RecvIP == IPPacket->SendIP) {
+                if (LocalIP == RecvPacket->RecvIP && RecvIP == RecvPacket->SendIP) {
                     cout << "IP地址与MAC地址的对应关系如下：" << endl << "IP：";
-                    print_IP(IPPacket->SendIP);
+                    print_IP(RecvPacket->SendIP);
                     cout << "MAC：";
-                    print_MAC(IPPacket->SendHA);
+                    print_MAC(RecvPacket->SendHA);
                     cout << endl;
                     break;  // 结束循环，已经找到并输出了对应关系
                 }
