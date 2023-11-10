@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34202.233
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "实验3：通过编程获取IP地址与MAC地址的对应关系", "实验3：通过编程获取IP地址与MAC地址的对应关系\实验3：通过编程获取IP地址与MAC地址的对应关系.vcxproj", "{A0EA1131-A51A-4605-BFEA-881AFF3878E6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{A0EA1131-A51A-4605-BFEA-881AFF3878E6}.Debug|x64.ActiveCfg = Debug|x64
+		{A0EA1131-A51A-4605-BFEA-881AFF3878E6}.Debug|x64.Build.0 = Debug|x64
+		{A0EA1131-A51A-4605-BFEA-881AFF3878E6}.Debug|x86.ActiveCfg = Debug|Win32
+		{A0EA1131-A51A-4605-BFEA-881AFF3878E6}.Debug|x86.Build.0 = Debug|Win32
+		{A0EA1131-A51A-4605-BFEA-881AFF3878E6}.Release|x64.ActiveCfg = Release|x64
+		{A0EA1131-A51A-4605-BFEA-881AFF3878E6}.Release|x64.Build.0 = Release|x64
+		{A0EA1131-A51A-4605-BFEA-881AFF3878E6}.Release|x86.ActiveCfg = Release|Win32
+		{A0EA1131-A51A-4605-BFEA-881AFF3878E6}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1F453374-BDDB-43A1-8BBD-0F8B12031E51}
+	EndGlobalSection
+EndGlobal
