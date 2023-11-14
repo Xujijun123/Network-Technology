@@ -26,9 +26,9 @@ typedef struct ARPFrame_t
     uint8_t HALen;             //硬件地址长度
     uint8_t PALen;             //协议地址长度
     uint16_t Operation;         //操作码
-    uint8_t SendHA[6];//发送方MAC地址
+    uint8_t SendMAC[6];//发送方MAC地址
     uint32_t SendIP;//发送方IP地址
-    uint8_t RecvHA[6];//接收方MAC地址
+    uint8_t RecvMAC[6];//接收方MAC地址
     uint32_t RecvIP;//接收方IP地址
 }ARPFrame_t;
 
@@ -74,12 +74,10 @@ int main()
                 if (addr->addr->sa_family == AF_INET)
                 {
 
-                    cout << "  IP地址：\t\t" << inet_ntoa(((struct sockaddr_in*)(addr->addr))->sin_addr) << endl;
-                    cout << "  网络掩码：\t\t" << inet_ntoa(((struct sockaddr_in*)(addr->netmask))->sin_addr) << endl;
-                    cout << "  广播地址：\t\t" << inet_ntoa(((struct sockaddr_in*)(addr->broadaddr))->sin_addr) << endl;
+                    cout << "  IP地址：" << inet_ntoa(((struct sockaddr_in*)(addr->addr))->sin_addr) << endl;
                 }
             }
-            cout << "=====================================================================" << endl;
+            cout  << endl;
         }
         index--;
     }
@@ -135,10 +133,11 @@ int main()
         {
             ARPFrame.FrameHeader.DesMAC[i] = 0xff;      //广播
             ARPFrame.FrameHeader.SrcMAC[i] = 0x0f;
-            ARPFrame.SendHA[i] = 0x0f;
-            ARPFrame.RecvHA[i] = 0;//表示目的地址未知
+            ARPFrame.SendMAC[i] = 0x0f;
+            ARPFrame.RecvMAC[i] = 0;
         }
             
+
         ARPFrame.FrameHeader.FrameType = htons(0x806);  //帧类型为ARP
         ARPFrame.Hardware_Type = htons(0x0001);         //硬件类型为以太网
         ARPFrame.Protocol_Type = htons(0x0800);         //协议类型为IP
@@ -167,7 +166,7 @@ int main()
         if (pcap_sendpacket(pcap_handle, (u_char*)&ARPFrame, sizeof(ARPFrame_t)) != 0)
         {
             pcap_freealldevs(allAdapters);
-            throw - 7;
+            return 0;
         } //发送失败的处理
         else
         {
@@ -175,19 +174,15 @@ int main()
                 pcap_next_ex(pcap_handle, &RecvHeader, &RecvData);
                 RecvPacket = (ARPFrame_t*)RecvData;
 
-                if (LocalIP == RecvPacket->SendIP && RecvIP == RecvPacket->RecvIP) {
-                    // 如果是期望的ARP响应包
-                    continue;  // 继续循环等待下一个包
-                }
-
+                
                 // 根据网卡号寻找IP地址，并输出IP地址与MAC地址映射关系
                 if (LocalIP == RecvPacket->RecvIP && RecvIP == RecvPacket->SendIP) {
                     cout << "IP地址与MAC地址的对应关系如下：" << endl << "IP：";
                     print_IP(RecvPacket->SendIP);
                     cout << "MAC：";
-                    print_MAC(RecvPacket->SendHA);
+                    print_MAC(RecvPacket->SendMAC);
                     cout << endl;
-                    break;  // 结束循环，已经找到并输出了对应关系
+                    break;  
                 }
             }
         }
@@ -201,7 +196,7 @@ int main()
 
         LocalIP = ARPFrame.SendIP = RecvPacket->SendIP;
         for (i = 0; i < 6; i++) {
-            ARPFrame.SendHA[i] = ARPFrame.FrameHeader.SrcMAC[i] = RecvPacket->SendHA[i];
+            ARPFrame.SendMAC[i] = ARPFrame.FrameHeader.SrcMAC[i] = RecvPacket->SendMAC[i];
         }
 
         if (pcap_sendpacket(pcap_handle, (u_char*)&ARPFrame, sizeof(ARPFrame_t)) != 0) {
@@ -214,16 +209,12 @@ int main()
                 pcap_next_ex(pcap_handle, &RecvHeader, &RecvData);
                 RecvPacket = (ARPFrame_t*)RecvData;
 
-                if (LocalIP == RecvPacket->SendIP && RecvIP == RecvPacket->RecvIP) {
-                    // 如果是期望的ARP响应包
-                    continue;  // 继续循环等待下一个包
-                }
-
+                
                 if (LocalIP == RecvPacket->RecvIP && RecvIP == RecvPacket->SendIP) {
                     cout << "IP地址与MAC地址的对应关系如下：" << endl << "IP：";
                     print_IP(RecvPacket->SendIP);
                     cout << "MAC：";
-                    print_MAC(RecvPacket->SendHA);
+                    print_MAC(RecvPacket->SendMAC);
                     cout << endl;
                     break;  // 结束循环，已经找到并输出了对应关系
                 }
